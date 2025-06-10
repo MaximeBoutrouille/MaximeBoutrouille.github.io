@@ -1,414 +1,840 @@
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-<title>Indice de charge de travail de la NASA</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA-TLX - Évaluation de Charge de Travail</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<script language="JavaScript" type="text/javascript">
-<!--
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-// Create a set of parallel arrays for each of the scales
-var scale      = new Array();
-var left       = new Array();
-var right      = new Array();
-var def        = new Array();
-var NUM_SCALES = 6;
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
 
-scale[0]  = "Demande mentale"; 
-left[0]   = "Faible";
-right[0]  = "Élevé";
-def[0]    = "Quelle est la demande mentale (p. ex., réfléchir, décider, calculer, se rappeler, regarder, chercher, etc.) ? La tâche est-elle facile ou exigeante, simple ou complexe, astreignante ou non ?";
+        .header {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
 
-scale[1]  = "Charge physique"; 
-left[1]   = "Faible";
-right[1]  = "Élevé";
-def[1]    = "Quel niveau d’activité physique est nécessaire (p. ex., pousser, tirer, tourner, contrôler, activer, etc.) ? La tâche est-elle facile ou exigeante, lente ou rapide, détendue ou épuisante, calme ou laborieuse, etc. ?";
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
 
-scale[2]  = "Demande temporelle"; 
-left[2]   = "Faible";
-right[2]  = "Élevé";
-def[2]    = "Quel niveau de pression temporelle ressentez-vous du fait de l’allure ou du rythme de la tâche ou de ses parties ? Le rythme était-il lent et paisible ou rapide et effréné ?";
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
 
-scale[3]  = "Performance"; 
-left[3]   = "Bonne";
-right[3]  = "Mauvaise";
-def[3]    = "Pensez-vous avoir réussi à accomplir les tâches allouées ? Êtes-vous satisfait de votre performance dans la réalisation des objectifs ?";
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            width: 100%;
+        }
 
-scale[4]  = "Effort"; 
-left[4]   = "Faible";
-right[4]  = "Élevé";
-def[4]    = "Quel est le coût du travail (mental et physique) nécessaire pour atteindre votre niveau de performance ?";
+        .progress-fill {
+            height: 100%;
+            background: #ffd700;
+            width: 33%;
+            transition: width 0.3s ease;
+        }
 
-scale[5]  = "Frustration"; 
-left[5]   = "Faible";
-right[5]  = "Élevé";
-def[5]    = "Pendant la tâche, vous êtes-vous sentis en difficulté, découragé, irrité, stressé, gêné, ou à l’inverse en sécurité, récompensé, satisfait, à l’aise ?";
+        .content {
+            padding: 40px;
+        }
 
-// Pairs of factors in order in the original instructions, numbers
-// refer to the index in the scale, left, right, def arrays.
-var pair  = new Array();
-pair[0]   = "4 3";
-pair[1]   = "2 5";
-pair[2]   = "2 4";
-pair[3]   = "1 5";
-pair[4]   = "3 5";
-pair[5]   = "1 2";
-pair[6]   = "1 3";
-pair[7]   = "2 0";
-pair[8]   = "5 4";
-pair[9]   = "3 0";
-pair[10]  = "3 2";
-pair[11]  = "0 4";
-pair[12]  = "0 1";
-pair[13]  = "4 1";
-pair[14]  = "5 0";
+        .scale-container {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
 
-// Variable where the results end up
-var results_rating = new Array();
-var results_tally  = new Array();
-var results_weight = new Array();
-var results_overall;
+        .scale-container:hover {
+            border-color: #4a90e2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.15);
+        }
 
-var pair_num = 0;
-for (var i = 0; i < NUM_SCALES; i++)
-	results_tally[i] = 0;
+        .scale-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
 
-// Used to randomize the pairings presented to the user
-function randOrd()
-{
-	return (Math.round(Math.random())-0.5); 
-}
+        .scale-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            opacity: 0.7;
+        }
 
-// Make sure things are good and mixed
-for (i = 0; i < 100; i++)
-{
-	pair.sort(randOrd);
-}
+        .scale-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
 
-// They click on a scale entry
-function scaleClick(index, val)
-{
-	results_rating[index] = val;
+        .scale-track {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            position: relative;
+        }
 
-	// Turn background color to white for all cells
-	for (i = 5; i <= 100; i += 5)
-	{
-		var top = "t_" + index + "_" + i;
-		var bottom = "b_" + index + "_" + i;
-		document.getElementById(top).bgColor='#FFFFFF';
-		document.getElementById(bottom).bgColor='#FFFFFF';
-	}
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 10px;
+        }
 
-	var top = "t_" + index + "_" + val;
-	var bottom = "b_" + index + "_" + val;
-	document.getElementById(top).bgColor='#AAAAAA';
-	document.getElementById(bottom).bgColor='#AAAAAA';
-}
+        .scale-label {
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
 
-// Return the HTML that produces the table for a given scale
-function getScaleHTML(index)
-{
-	var result = "";
+        .scale-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            position: relative;
+            cursor: pointer;
+            margin: 15px 0;
+        }
 
-	// Outer table with a column for scale, column for definition
-	result += '<table><tr><td>';
+        .scale-markers {
+            position: absolute;
+            top: -5px;
+            left: 0;
+            right: 0;
+            height: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-	// Table that generates the scale
-	result += '<table class="scale">';
+        .scale-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dee2e6;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
-	// Row 1, just the name of the scale
-	result += '<tr><td colspan="20" class="heading">' + scale[index] + '</td></tr>';
+        .scale-marker:hover {
+            transform: scale(1.2);
+            background: #4a90e2;
+        }
 
-	// Row 2, the top half of the scale increments, 20 total columns
-	result += '<tr>';
-	var num = 1;
-	for (var i = 5; i <= 100; i += 5)
-	{
-		result += '<td id="t_' + index + '_' + i + '"   class="top' + num + '" onMouseUp="scaleClick(' + index + ', ' + i + ');"></td>';
-		num++;
-		if (num > 2)
-			num = 1;
-	}
-	result += '</tr>';
+        .scale-marker.selected {
+            background: #4a90e2;
+            transform: scale(1.3);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
 
-	// Row 3, bottom half of the scale increments
-	result += '<tr>';
-	for (var i = 5; i <= 100; i += 5)
-	{
-		result += '<td id="b_' + index + '_' + i + '"   class="bottom" onMouseUp="scaleClick(' + index + ', ' + i + ');"></td>';
-	}
-	result += '</tr>';
+        .scale-value {
+            position: absolute;
+            top: -35px;
+            background: #2c3e50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
 
-	// Row 4, left and right of range labels
-	result += '<tr>';
-	result += '<td colspan="10" class="left">' + left[index] + '</td><td colspan="10" class="right">' + right[index] + '</td>';
-	result += '</tr></table></td>';
+        .scale-marker.selected .scale-value {
+            opacity: 1;
+        }
 
+        .btn {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
 
-	// Now for the definition of the scale
-	result += '<td class="def">';
-	result += def[index];
-	result += '</td></tr></table>';
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+        }
 
-	return result;
-}
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-function onLoad()
-{
-	// Get all the scales ready
-	for (var i = 0; i < NUM_SCALES; i++)
-	{
-		document.getElementById("scale" + i).innerHTML = getScaleHTML(i);
-	}
-}
+        .comparison-container {
+            text-align: center;
+            padding: 20px;
+        }
 
-// Users want to proceed after doing the scales
-function buttonPart1()
-{
-	// Check to be sure they click on every scale
-	for (var i = 0; i < NUM_SCALES; i++)
-	{
-		if (!results_rating[i])
-		{
-			alert('Une valeur doit être sélectionnée pour toutes les échelles!');
-			return false;
-		}
-	}
+        .comparison-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
 
-	// Bye bye part 1, hello part 2
-	document.getElementById('div_part1').style.display = 'none'; 
-	document.getElementById('div_part2').style.display = ''; 
+        .comparison-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
 
-	return true;
-}
+        .comparison-btn {
+            background: white;
+            border: 2px solid #e9ecef;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
 
-// User done reading the part 2 instructions
-function buttonPart2()
-{
-	// Bye bye part 2, hello part 3
-	document.getElementById('div_part2').style.display = 'none'; 
-	document.getElementById('div_part3').style.display = ''; 
+        .comparison-btn:hover {
+            border-color: #4a90e2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.15);
+        }
 
-	// Set the labels for the buttons
-	setPairLabels();
-	return true;
-}
+        .comparison-btn-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
 
-// Set the button labels for the pairwise comparison stage
-function setPairLabels()
-{
-	var indexes = new Array();
-	indexes = pair[pair_num].split(" ");
+        .comparison-btn-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
 
-	var pair1 = scale[indexes[0]];
-	var pair2 = scale[indexes[1]];
+        .or-divider {
+            text-align: center;
+            margin: 15px 0;
+            color: #999;
+            font-style: italic;
+        }
 
-	document.getElementById('pair1').value = pair1;
-	document.getElementById('pair2').value = pair2;
+        .results-container {
+            padding: 20px;
+        }
 
-	document.getElementById('pair1_def').innerHTML = def[indexes[0]];
-	document.getElementById('pair2_def').innerHTML = def[indexes[1]];
-}
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
 
-// They clicked the top pair button
-function buttonPair1()
-{
-	var indexes = new Array();
-	indexes = pair[pair_num].split(" ");
-	results_tally[indexes[0]]++;	
+        .results-table th {
+            background: #4a90e2;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 500;
+        }
 
-	nextPair();
-	return true;
-}
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
 
-// They clicked the bottom pair button
-function buttonPair2()
-{
-	var indexes = new Array();
-	indexes = pair[pair_num].split(" ");
-	results_tally[indexes[1]]++;	
-	nextPair();
-	return true;
-}
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
 
-// Compute the weights and the final score
-function calcResults()
-{
-	results_overall = 0.0;
+        .overall-score {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
 
-	for (var i = 0; i < NUM_SCALES; i++)
-	{
-		results_weight[i] = results_tally[i] / 15.0;
-		results_overall += results_weight[i] * results_rating[i];
-	}
-}
+        .hidden {
+            display: none !important;
+        }
 
-// Output the table of results
-function getResultsHTML()
-{
-	var result = "";
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
 
-	result += "<table><tr><td></td><td>Rating</td><td>Tally</td><td>Weight</td></tr>";
-	for (var i = 0; i < NUM_SCALES; i++)
-	{
-		result += "<tr>";
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-		result += "<td>";
-		result += scale[i];
-		result += "</td>";
+        .instruction-text {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #4a90e2;
+        }
 
-		result += "<td>";
-		result += results_rating[i];
-		result += "</td>";
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
 
-		result += "<td>";
-		result += results_tally[i];
-		result += "</td>";
-
-		result += "<td>";
-		result += results_weight[i];
-		result += "</td>";
-
-		result += "</tr>";
-	}
-
-	result += "</table>";
-	result += "<br/>";
-	result += "Overall = ";
-	result += results_overall;
-	result += "<br/>";
-
-	return result;
-}
-
-// Move to the next pair
-function nextPair()
-{
-	pair_num++;
-	if (pair_num >= 15)
-	{
-		document.getElementById('div_part3').style.display = 'none'; 
-		document.getElementById('div_part4').style.display = '';
-		calcResults();
-		document.getElementById('div_part4').innerHTML = getResultsHTML();		
-	}
-	else
-	{
-		setPairLabels();
-	}
-}
-
-// -->
-</script>
-<style>
-td.bottom
-{
-	width: 0.6cm;
-      height: 0.4cm;
-	border-bottom: 1px solid black;
-	border-left: 1px solid black;
-	border-right: 1px solid black;
-	margin: 0px; 
-	padding: 0px 0px 0px 0px;
-
-}
-
-table.scale
-{
-	margin: 0px;
-	padding: 0px 0px 0px 0px;
-      border-collapse: collapse
-}
-
-td.top1
-{
-	width: 0.6cm;
-      height: 0.4cm;
-	border-top: 1px solid black;
-	border-left: 1px solid black;
-	margin: 0px; 
-	padding: 0px 0px 0px 0px;
-}
-td.top2
-{
-	width: 0.6cm;
-      height: 0.4cm;
-	border-top: 1px solid black;
-	border-right: 1px solid black;
-	margin: 0px; 
-	padding: 0px 0px 0px 0px;
-}
-td.heading
-{
-	font: Bold 14px Arial, Helvetica, sans-serif;
-	text-align: center;
-}
-td.left
-{
-	font: 14px Arial, Helvetica, sans-serif;
-}
-td.right
-{
-	font: 14px Arial, Helvetica, sans-serif;
-	text-align: right;
-}
-
-td.def
-{
-	width: 12cm;	
-	padding: 0px 0px 0px 20px;
-	font: 12px Arial, Helvetica, sans-serif;
-}
-
-input.pair
-{
-	width: 5cm;
-	height: 1cm;
-	font: Bold 14px Arial, Helvetica, sans-serif;
-}
-</style>
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
 </head>
-<body onLoad="onLoad();">
-<div id="div_part2" style="display:none">
-Questionnaire de la tâche - Partie 2 <br />
-<br />
-Sur chacun des 15 écrans suivants, cliquez sur le titre de l'échelle qui représente la plus importante contribution à la charge de travail pour la tâche <br />
-<br />
-<input class="next" id="next" type="button" value="Continuer >>" onClick="buttonPart2();">
-</div>
-<div id="div_part3" style="display:none">
-Questionnaire de la tâche - Partie 2 <br />
-<br />
-Cliquez sur le facteur qui contribue le plus à la charge de travail pour cette tâche<br />
-<br />
-<table>
-<tr>
-<td><input class="pair" id="pair1" type="button" value="" onClick="buttonPair1();"> </td>
-<td class="def"><div id="pair1_def"></div></td>
-</tr>
-<tr>
-<td align="center"> ou </td>
-<td></td>
-</tr>
-<tr>
-<td><input class="pair" id="pair2" type="button" value="" onClick="buttonPair2();"></td>
-<td class="def"><div id="pair2_def"></div></td>
-</tr>
-</table>
-</div>
-<div id="div_part1">
-Questionnaire de la tâche - Partie 1 <br />
-<br />
-Sur chaque échelle, cliquez sur le point qui indique le mieux votre expérience de la tâche. <br />
-<br />
-<div id="scale0"></div>
-<div id="scale1"></div>
-<div id="scale2"></div>
-<div id="scale3"></div>
-<div id="scale4"></div>
-<div id="scale5"></div>
-<br />
-<input class="next" id="next" type="button" value="Continuer >>" onClick="buttonPart1();">
-</div>
-<div id="div_part4" style="display:none">
-</div>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NASA Task Load Index</h1>
+            <p>Évaluation subjective de la charge de travail</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Partie 0: Identification du participant -->
+        <div id="part0" class="content">
+            <div class="instruction-text">
+                <strong>Bienvenue dans l'évaluation NASA-TLX</strong><br>
+                Cette évaluation mesure la charge de travail subjective ressentie lors d'une tâche.
+            </div>
+            
+            <div style="max-width: 500px; margin: 0 auto;">
+                <h3 style="text-align: center; margin-bottom: 30px; color: #2c3e50;">Identification (optionnel)</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #555;">Prénom :</label>
+                    <input type="text" id="firstName" placeholder="Votre prénom" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1em; transition: border-color 0.3s ease;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #555;">Nom :</label>
+                    <input type="text" id="lastName" placeholder="Votre nom" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1em; transition: border-color 0.3s ease;">
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #555;">Code participant :</label>
+                    <input type="text" id="participantCode" placeholder="Ex: P001, SUJ-123..." style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 1em; transition: border-color 0.3s ease;">
+                </div>
+                
+                <p style="text-align: center; color: #666; margin-bottom: 30px; font-size: 0.9em;">
+                    Ces informations sont optionnelles et apparaîtront dans le rapport final.
+                </p>
+                
+                <div style="text-align: center;">
+                    <button class="btn" onclick="startEvaluation()">Commencer l'évaluation →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Partie 1: Instructions pour comparaisons -->
+        <div id="part1" class="content hidden">
+            <div class="instruction-text">
+                <strong>Étape 1 sur 3:</strong> Vous allez maintenant comparer les facteurs par paires pour déterminer leur importance relative dans votre évaluation de la charge de travail.
+            </div>
+            
+            <p style="margin-bottom: 30px; text-align: center; font-size: 1.1em; color: #666;">
+                Sur les 15 écrans suivants, cliquez sur le facteur qui a le plus contribué à la charge de travail pour cette tâche.
+            </p>
+            
+            <div style="text-align: center;">
+                <button class="btn" onclick="startComparisons()">Commencer les comparaisons →</button>
+            </div>
+        </div>
+
+        <!-- Partie 2: Évaluation des échelles -->
+        <div id="part2" class="content hidden">
+            <div class="instruction-text">
+                <strong>Étape 2 sur 3:</strong> Évaluez chaque dimension en cliquant sur l'échelle selon votre expérience de la tâche.
+            </div>
+            
+            <div id="scalesContainer"></div>
+            
+            <div class="alert" id="alertPart2">
+                ⚠️ Veuillez évaluer toutes les dimensions avant de continuer.
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn" onclick="proceedToPart3()">Voir les résultats →</button>
+            </div>
+        </div>
+
+        <!-- Partie 3: Comparaisons par paires -->
+        <div id="part3" class="content hidden">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span style="color: #666;">Comparaison <span id="comparisonNumber">1</span> sur 15</span>
+            </div>
+            
+            <div class="comparison-container">
+                <h3 class="comparison-title">Quel facteur contribue le plus à la charge de travail ?</h3>
+                
+                <div class="comparison-options">
+                    <div class="comparison-btn" id="option1" onclick="selectOption(0)">
+                        <div class="comparison-btn-title" id="option1Title"></div>
+                        <div class="comparison-btn-desc" id="option1Desc"></div>
+                    </div>
+                    
+                    <div class="or-divider">ou</div>
+                    
+                    <div class="comparison-btn" id="option2" onclick="selectOption(1)">
+                        <div class="comparison-btn-title" id="option2Title"></div>
+                        <div class="comparison-btn-desc" id="option2Desc"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Partie 4: Résultats -->
+        <div id="part4" class="content hidden">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #2c3e50;">Résultats de l'évaluation</h2>
+            
+            <table class="results-table" id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Dimension</th>
+                        <th>Évaluation</th>
+                        <th>Poids</th>
+                        <th>Score pondéré</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            
+            <div class="overall-score">
+                Score NASA-TLX: <span id="overallScore">0</span>/100
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn" onclick="downloadPDF()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    📄 Télécharger le rapport PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration des échelles
+        const scales = [
+            {
+                name: "Demande mentale",
+                icon: "🧠",
+                left: "Faible",
+                right: "Élevé",
+                description: "Quelle est la demande mentale (réfléchir, décider, calculer, se rappeler, regarder, chercher, etc.) ? La tâche est-elle facile ou exigeante, simple ou complexe ?"
+            },
+            {
+                name: "Charge physique",
+                icon: "💪",
+                left: "Faible", 
+                right: "Élevé",
+                description: "Quel niveau d'activité physique est nécessaire (pousser, tirer, tourner, contrôler, activer, etc.) ? La tâche est-elle facile ou exigeante, lente ou rapide ?"
+            },
+            {
+                name: "Demande temporelle",
+                icon: "⏰",
+                left: "Faible",
+                right: "Élevé", 
+                description: "Quel niveau de pression temporelle ressentez-vous du fait de l'allure ou du rythme de la tâche ? Le rythme était-il lent et paisible ou rapide et effréné ?"
+            },
+            {
+                name: "Performance",
+                icon: "🎯",
+                left: "Bonne",
+                right: "Mauvaise",
+                description: "Pensez-vous avoir réussi à accomplir les tâches allouées ? Êtes-vous satisfait de votre performance dans la réalisation des objectifs ?"
+            },
+            {
+                name: "Effort",
+                icon: "⚡",
+                left: "Faible",
+                right: "Élevé",
+                description: "Quel est le coût du travail (mental et physique) nécessaire pour atteindre votre niveau de performance ?"
+            },
+            {
+                name: "Frustration",
+                icon: "😤",
+                left: "Faible",
+                right: "Élevé",
+                description: "Pendant la tâche, vous êtes-vous sentis en difficulté, découragé, irrité, stressé, ou à l'inverse en sécurité, satisfait, à l'aise ?"  
+            }
+        ];
+
+        // Paires pour les comparaisons (indices des échelles)
+        const pairs = [
+            [4, 3], [2, 5], [2, 4], [1, 5], [3, 5], [1, 2], [1, 3], [2, 0], 
+            [5, 4], [3, 0], [3, 2], [0, 4], [0, 1], [4, 1], [5, 0]
+        ];
+
+        // Variables pour stocker les résultats
+        let ratings = new Array(6);
+        let tallies = new Array(6).fill(0);
+        let currentPair = 0;
+        let shuffledPairs = [...pairs];
+        let participantInfo = {
+            firstName: '',
+            lastName: '', 
+            participantCode: ''
+        };
+
+        // Mélanger les paires
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        shuffleArray(shuffledPairs);
+
+        // Commencer l'évaluation (depuis l'écran d'accueil)
+        function startEvaluation() {
+            // Récupérer les informations du participant
+            participantInfo.firstName = document.getElementById('firstName').value.trim();
+            participantInfo.lastName = document.getElementById('lastName').value.trim();
+            participantInfo.participantCode = document.getElementById('participantCode').value.trim();
+            
+            document.getElementById('part0').classList.add('hidden');
+            document.getElementById('part1').classList.remove('hidden');
+            document.getElementById('part1').classList.add('fade-in');
+            updateProgressBar(25);
+        }
+
+        // Initialiser les échelles
+        function initializeScales() {
+            const container = document.getElementById('scalesContainer');
+            
+            scales.forEach((scale, index) => {
+                const scaleDiv = document.createElement('div');
+                scaleDiv.className = 'scale-container';
+                
+                scaleDiv.innerHTML = `
+                    <div class="scale-title">
+                        <span class="scale-icon">${scale.icon}</span>
+                        ${scale.name}
+                    </div>
+                    <div class="scale-description">${scale.description}</div>
+                    <div class="scale-labels">
+                        <span class="scale-label">${scale.left}</span>
+                        <span class="scale-label">${scale.right}</span>
+                    </div>
+                    <div class="scale-slider" onclick="handleSliderClick(event, ${index})">
+                        <div class="scale-markers" id="markers${index}">
+                            ${Array.from({length: 20}, (_, i) => `
+                                <div class="scale-marker" data-value="${(i + 1) * 5}" onclick="selectRating(${index}, ${(i + 1) * 5}, event)">
+                                    <div class="scale-value">${(i + 1) * 5}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(scaleDiv);
+            });
+        }
+
+        // Gérer la sélection d'une valeur
+        function selectRating(scaleIndex, value, event) {
+            event.stopPropagation();
+            ratings[scaleIndex] = value;
+            
+            // Mettre à jour l'affichage
+            const markers = document.querySelectorAll(`#markers${scaleIndex} .scale-marker`);
+            markers.forEach(marker => marker.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        // Gérer le clic sur la barre
+        function handleSliderClick(event, scaleIndex) {
+            const slider = event.currentTarget;
+            const rect = slider.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percentage = x / rect.width;
+            const value = Math.round(percentage * 20) * 5;
+            const clampedValue = Math.max(5, Math.min(100, value));
+            
+            selectRating(scaleIndex, clampedValue, event);
+            
+            // Simuler le clic sur le bon marqueur
+            const markers = document.querySelectorAll(`#markers${scaleIndex} .scale-marker`);
+            markers.forEach(marker => marker.classList.remove('selected'));
+            const targetMarker = document.querySelector(`#markers${scaleIndex} .scale-marker[data-value="${clampedValue}"]`);
+            if (targetMarker) {
+                targetMarker.classList.add('selected');
+            }
+        }
+
+        // Commencer les comparaisons
+        function startComparisons() {
+            document.getElementById('part1').classList.add('hidden');
+            document.getElementById('part3').classList.remove('hidden');
+            document.getElementById('part3').classList.add('fade-in');
+            updateProgressBar(50);
+            showCurrentComparison();
+        }
+
+        // Passer à la partie 3 (maintenant les résultats)
+        function proceedToPart3() {
+            // Vérifier que toutes les échelles sont évaluées
+            for (let i = 0; i < 6; i++) {
+                if (!ratings[i]) {
+                    document.getElementById('alertPart2').style.display = 'block';
+                    return;
+                }
+            }
+            
+            showResults();
+        }
+
+        // Afficher la comparaison actuelle
+        function showCurrentComparison() {
+            if (currentPair >= shuffledPairs.length) {
+                showResults();
+                return;
+            }
+            
+            const pair = shuffledPairs[currentPair];
+            const scale1 = scales[pair[0]];
+            const scale2 = scales[pair[1]];
+            
+            document.getElementById('comparisonNumber').textContent = currentPair + 1;
+            document.getElementById('option1Title').textContent = scale1.name;
+            document.getElementById('option1Desc').textContent = scale1.description;
+            document.getElementById('option2Title').textContent = scale2.name;
+            document.getElementById('option2Desc').textContent = scale2.description;
+        }
+
+        // Sélectionner une option dans la comparaison
+        function selectOption(optionIndex) {
+            const pair = shuffledPairs[currentPair];
+            tallies[pair[optionIndex]]++;
+            
+            currentPair++;
+            
+            if (currentPair >= shuffledPairs.length) {
+                // Aller vers l'étape 2 (évaluations) après les comparaisons
+                document.getElementById('part3').classList.add('hidden');
+                document.getElementById('part2').classList.remove('hidden');
+                document.getElementById('part2').classList.add('fade-in');
+                initializeScales();
+                updateProgressBar(75);
+            } else {
+                showCurrentComparison();
+            }
+        }
+
+        // Afficher les résultats
+        function showResults() {
+            document.getElementById('part2').classList.add('hidden');
+            document.getElementById('part4').classList.remove('hidden');
+            document.getElementById('part4').classList.add('fade-in');
+            updateProgressBar(100);
+            
+            calculateAndDisplayResults();
+        }
+
+        // Calculer et afficher les résultats
+        function calculateAndDisplayResults() {
+            const tbody = document.querySelector('#resultsTable tbody');
+            let overallScore = 0;
+            
+            scales.forEach((scale, index) => {
+                const weight = tallies[index] / 15;
+                const weightedScore = weight * ratings[index];
+                overallScore += weightedScore;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${scale.name}</strong></td>
+                    <td>${ratings[index]}</td>
+                    <td>${weight.toFixed(2)}</td>
+                    <td>${weightedScore.toFixed(1)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('overallScore').textContent = Math.round(overallScore);
+        }
+
+        // Télécharger le rapport PDF
+        function downloadPDF() {
+            // Créer le contenu du PDF
+            const participantName = getParticipantName();
+            const date = new Date().toLocaleDateString('fr-FR');
+            const time = new Date().toLocaleTimeString('fr-FR');
+            
+            let pdfContent = `NASA Task Load Index - Rapport d'évaluation\n\n`;
+            pdfContent += `Date: ${date} à ${time}\n`;
+            if (participantName) {
+                pdfContent += `Participant: ${participantName}\n`;
+            }
+            pdfContent += `\n${'='.repeat(50)}\n\n`;
+            
+            pdfContent += `RÉSULTATS DÉTAILLÉS\n\n`;
+            
+            let overallScore = 0;
+            scales.forEach((scale, index) => {
+                const weight = tallies[index] / 15;
+                const weightedScore = weight * ratings[index];
+                overallScore += weightedScore;
+                
+                pdfContent += `${scale.name}:\n`;
+                pdfContent += `  Évaluation: ${ratings[index]}/100\n`;
+                pdfContent += `  Poids: ${weight.toFixed(2)}\n`;
+                pdfContent += `  Score pondéré: ${weightedScore.toFixed(1)}\n\n`;
+            });
+            
+            pdfContent += `${'='.repeat(50)}\n`;
+            pdfContent += `SCORE NASA-TLX FINAL: ${Math.round(overallScore)}/100\n`;
+            pdfContent += `${'='.repeat(50)}\n\n`;
+            
+            pdfContent += `INTERPRÉTATION:\n`;
+            const interpretation = getScoreInterpretation(Math.round(overallScore));
+            pdfContent += `${interpretation}\n\n`;
+            
+            pdfContent += `MÉTHODOLOGIE:\n`;
+            pdfContent += `Le NASA Task Load Index (NASA-TLX) est un outil d'évaluation subjective\n`;
+            pdfContent += `de la charge de travail développé par la NASA. Il mesure six dimensions:\n`;
+            pdfContent += `• Demande mentale\n• Charge physique\n• Demande temporelle\n`;
+            pdfContent += `• Performance\n• Effort\n• Frustration\n\n`;
+            pdfContent += `Le score final est calculé en pondérant chaque dimension selon\n`;
+            pdfContent += `son importance relative déterminée par des comparaisons par paires.`;
+            
+            // Créer et télécharger le fichier
+            const blob = new Blob([pdfContent], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `NASA-TLX_${participantName ? participantName.replace(/\s+/g, '_') : 'rapport'}_${date.replace(/\//g, '-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Obtenir le nom du participant
+        function getParticipantName() {
+            if (participantInfo.firstName || participantInfo.lastName) {
+                return `${participantInfo.firstName} ${participantInfo.lastName}`.trim();
+            } else if (participantInfo.participantCode) {
+                return participantInfo.participantCode;
+            }
+            return '';
+        }
+
+        // Interprétation du score
+        function getScoreInterpretation(score) {
+            if (score <= 30) {
+                return "Charge de travail faible - La tâche est perçue comme peu exigeante.";
+            } else if (score <= 50) {
+                return "Charge de travail modérée - La tâche présente une difficulté raisonnable.";
+            } else if (score <= 70) {
+                return "Charge de travail élevée - La tâche est considérée comme exigeante.";
+            } else {
+                return "Charge de travail très élevée - La tâche est perçue comme très contraignante.";
+            }
+        }
+
+        // Mettre à jour la barre de progression
+        function updateProgressBar(percentage) {
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        // Initialiser l'application
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgressBar(0);
+            
+            // Améliorer le style des champs de saisie
+            const inputs = document.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.style.borderColor = '#4a90e2';
+                    this.style.boxShadow = '0 0 0 3px rgba(74, 144, 226, 0.1)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.borderColor = '#e9ecef';
+                    this.style.boxShadow = 'none';
+                });
+            });
+        });
+    </script>
 </body>
+</html>
 </html>
