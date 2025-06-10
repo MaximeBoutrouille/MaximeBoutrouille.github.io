@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NASA-TLX - Évaluation de Charge de Travail</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -734,58 +735,191 @@
 
         // Télécharger le rapport PDF
         function downloadPDF() {
-            // Créer le contenu du PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
             const participantName = getParticipantName();
             const date = new Date().toLocaleDateString('fr-FR');
-            const time = new Date().toLocaleTimeString('fr-FR');
+            const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             
-            let pdfContent = `NASA Task Load Index - Rapport d'évaluation\n\n`;
-            pdfContent += `Date: ${date} à ${time}\n`;
-            if (participantName) {
-                pdfContent += `Participant: ${participantName}\n`;
+            let yPosition = 20;
+            const lineHeight = 7;
+            const pageHeight = 297; // A4 height in mm
+            const margin = 20;
+            
+            // Fonction pour ajouter du texte avec gestion des pages
+            function addText(text, x, y, options = {}) {
+                if (y > pageHeight - margin) {
+                    doc.addPage();
+                    return margin;
+                }
+                doc.text(text, x, y, options);
+                return y;
             }
-            pdfContent += `\n${'='.repeat(50)}\n\n`;
             
-            pdfContent += `RÉSULTATS DÉTAILLÉS\n\n`;
+            // En-tête
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('NASA Task Load Index', 20, yPosition);
+            yPosition += 5;
             
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'normal');
+            yPosition = addText('Rapport d\'évaluation de la charge de travail', 20, yPosition);
+            yPosition += 15;
+            
+            // Informations générales
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('INFORMATIONS GÉNÉRALES', 20, yPosition);
+            yPosition += 8;
+            
+            doc.setFont(undefined, 'normal');
+            yPosition = addText(`Date d'évaluation: ${date} à ${time}`, 20, yPosition);
+            yPosition += lineHeight;
+            
+            if (participantName) {
+                yPosition = addText(`Participant: ${participantName}`, 20, yPosition);
+                yPosition += lineHeight;
+            }
+            
+            yPosition += 10;
+            
+            // Ligne de séparation
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 15;
+            
+            // Résultats détaillés
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('RÉSULTATS DÉTAILLÉS', 20, yPosition);
+            yPosition += 10;
+            
+            // En-têtes du tableau
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('Dimension', 20, yPosition);
+            addText('Évaluation', 80, yPosition);
+            addText('Poids', 120, yPosition);
+            addText('Score pondéré', 150, yPosition);
+            yPosition += 5;
+            
+            // Ligne sous les en-têtes
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 8;
+            
+            // Données du tableau
+            doc.setFont(undefined, 'normal');
             let overallScore = 0;
+            
             scales.forEach((scale, index) => {
                 const weight = tallies[index] / 15;
                 const weightedScore = weight * ratings[index];
                 overallScore += weightedScore;
                 
-                pdfContent += `${scale.name}:\n`;
-                pdfContent += `  Évaluation: ${ratings[index]}/100\n`;
-                pdfContent += `  Poids: ${weight.toFixed(2)}\n`;
-                pdfContent += `  Score pondéré: ${weightedScore.toFixed(1)}\n\n`;
+                if (yPosition > pageHeight - 40) {
+                    doc.addPage();
+                    yPosition = margin;
+                }
+                
+                yPosition = addText(scale.name, 20, yPosition);
+                addText(`${ratings[index]}/100`, 80, yPosition);
+                addText(weight.toFixed(2), 120, yPosition);
+                addText(weightedScore.toFixed(1), 150, yPosition);
+                yPosition += lineHeight;
             });
             
-            pdfContent += `${'='.repeat(50)}\n`;
-            pdfContent += `SCORE NASA-TLX FINAL: ${Math.round(overallScore)}/100\n`;
-            pdfContent += `${'='.repeat(50)}\n\n`;
+            yPosition += 10;
             
-            pdfContent += `INTERPRÉTATION:\n`;
-            const interpretation = getScoreInterpretation(Math.round(overallScore));
-            pdfContent += `${interpretation}\n\n`;
+            // Ligne de séparation
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 15;
             
-            pdfContent += `MÉTHODOLOGIE:\n`;
-            pdfContent += `Le NASA Task Load Index (NASA-TLX) est un outil d'évaluation subjective\n`;
-            pdfContent += `de la charge de travail développé par la NASA. Il mesure six dimensions:\n`;
-            pdfContent += `• Demande mentale\n• Charge physique\n• Demande temporelle\n`;
-            pdfContent += `• Performance\n• Effort\n• Frustration\n\n`;
-            pdfContent += `Le score final est calculé en pondérant chaque dimension selon\n`;
-            pdfContent += `son importance relative déterminée par des comparaisons par paires.`;
+            // Score final
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            const finalScore = Math.round(overallScore);
+            yPosition = addText(`SCORE NASA-TLX: ${finalScore}/100`, 20, yPosition);
+            yPosition += 15;
             
-            // Créer et télécharger le fichier
-            const blob = new Blob([pdfContent], { type: 'text/plain;charset=utf-8' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `NASA-TLX_${participantName ? participantName.replace(/\s+/g, '_') : 'rapport'}_${date.replace(/\//g, '-')}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            // Interprétation
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('INTERPRÉTATION', 20, yPosition);
+            yPosition += 8;
+            
+            doc.setFont(undefined, 'normal');
+            const interpretation = getScoreInterpretation(finalScore);
+            const interpretationLines = doc.splitTextToSize(interpretation, 170);
+            
+            interpretationLines.forEach(line => {
+                if (yPosition > pageHeight - 40) {
+                    doc.addPage();
+                    yPosition = margin;
+                }
+                yPosition = addText(line, 20, yPosition);
+                yPosition += lineHeight;
+            });
+            
+            yPosition += 10;
+            
+            // Méthodologie
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('MÉTHODOLOGIE', 20, yPosition);
+            yPosition += 8;
+            
+            doc.setFont(undefined, 'normal');
+            const methodology = `Le NASA Task Load Index (NASA-TLX) est un outil d'évaluation subjective de la charge de travail développé par la NASA. Il mesure six dimensions de la charge de travail : la demande mentale, la charge physique, la demande temporelle, la performance, l'effort et la frustration. Le score final est calculé en pondérant chaque dimension selon son importance relative, déterminée par une série de 15 comparaisons par paires entre les différentes dimensions.`;
+            
+            const methodologyLines = doc.splitTextToSize(methodology, 170);
+            
+            methodologyLines.forEach(line => {
+                if (yPosition > pageHeight - 40) {
+                    doc.addPage();
+                    yPosition = margin;
+                }
+                yPosition = addText(line, 20, yPosition);
+                yPosition += lineHeight;
+            });
+            
+            // Détail des dimensions
+            yPosition += 15;
+            doc.setFont(undefined, 'bold');
+            yPosition = addText('DÉTAIL DES DIMENSIONS', 20, yPosition);
+            yPosition += 8;
+            
+            doc.setFontSize(10);
+            scales.forEach((scale, index) => {
+                if (yPosition > pageHeight - 50) {
+                    doc.addPage();
+                    yPosition = margin;
+                }
+                
+                doc.setFont(undefined, 'bold');
+                yPosition = addText(`${scale.icon} ${scale.name}`, 20, yPosition);
+                yPosition += 5;
+                
+                doc.setFont(undefined, 'normal');
+                const descLines = doc.splitTextToSize(scale.description, 170);
+                descLines.forEach(line => {
+                    yPosition = addText(line, 20, yPosition);
+                    yPosition += 5;
+                });
+                yPosition += 5;
+            });
+            
+            // Pied de page sur toutes les pages
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Page ${i}/${pageCount}`, 180, pageHeight - 10);
+                doc.text('Généré par NASA-TLX Web Interface', 20, pageHeight - 10);
+            }
+            
+            // Télécharger le PDF
+            const fileName = `NASA-TLX_${participantName ? participantName.replace(/\s+/g, '_') : 'rapport'}_${date.replace(/\//g, '-')}.pdf`;
+            doc.save(fileName);
         }
 
         // Obtenir le nom du participant
@@ -836,5 +970,4 @@
         });
     </script>
 </body>
-</html>
 </html>
